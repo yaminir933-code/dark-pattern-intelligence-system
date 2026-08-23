@@ -1,0 +1,45 @@
+# Environment Variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Virtual Environment
+venv/
+env/
+.conda/
+dpis_env/
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Data (raw scraped data - too large for GitHub)
+data/raw/*.csv
+data/raw/*.json
+data/raw/*.html
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Sensitive
+*.pem
+*.key
+secrets.json

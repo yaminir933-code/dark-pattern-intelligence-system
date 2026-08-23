@@ -1,0 +1,42 @@
+# Core Data Science
+pandas==2.2.2
+numpy==1.26.4
+jupyter==1.0.0
+ipykernel==6.29.4
+
+# Web Scraping
+requests==2.31.0
+beautifulsoup4==4.12.3
+selenium==4.21.0
+playwright==1.44.0
+lxml==5.2.2
+fake-useragent==1.5.1
+
+# NLP & Text Processing
+nltk==3.8.1
+spacy==3.7.4
+textblob==0.18.0
+wordcloud==1.9.3
+scikit-learn==1.4.2
+
+# Database
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.30
+python-dotenv==1.0.1
+
+# Excel & Reporting
+openpyxl==3.1.2
+xlsxwriter==3.2.0
+fpdf2==2.7.9
+
+# Visualization
+matplotlib==3.8.4
+seaborn==0.13.2
+plotly==5.22.0
+
+# Web App
+streamlit==1.35.0
+
+# Utilities
+tqdm==4.66.4
+schedule==1.2.2
