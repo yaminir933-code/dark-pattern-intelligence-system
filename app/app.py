@@ -16,8 +16,19 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import sys
 import os
+
+# ── Setup Path Imports ───────────────────────────────────────
+app_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(app_dir)
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
 from datetime import datetime, date
 import time
+
+from src.db_connector import load_dataframe, test_connection, init_db, save_live_scan_to_db
+from src.scraper import EcommerceScraper
+from src.classifier import DarkPatternClassifier
 
 # ── Page Config ──────────────────────────────────────────────
 st.set_page_config(
@@ -120,10 +131,58 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# ── Sample Data (replace with DB queries in production) ─────
+# ── Database & Sample Data Loading ──────────────────────────
+@st.cache_data(ttl=300)
+def load_db_data():
+    """Loads metrics and dark pattern data from database."""
+    try:
+        if not test_connection():
+            init_db(force=False)
+            
+        scores_query = """
+            SELECT w.name AS website, r.dprs_score, r.compliance_status, r.total_patterns,
+                   r.high_severity, r.medium_severity, r.low_severity,
+                   r.total_pages_scanned AS pages_scanned, r.scan_date
+            FROM risk_scores r
+            JOIN websites w ON r.website_id = w.id
+            WHERE r.scan_date = (SELECT MAX(scan_date) FROM risk_scores WHERE website_id = r.website_id)
+            ORDER BY r.dprs_score DESC
+        """
+        scores_data = load_dataframe(scores_query)
+        if len(scores_data) == 0:
+            return None, None, None
+
+        patterns_query = """
+            SELECT w.name AS website, dp.pattern_name, dp.pattern_type, dp.severity, dp.confidence, dp.evidence
+            FROM dark_patterns dp
+            JOIN websites w ON dp.website_id = w.id
+            ORDER BY dp.detected_at DESC
+        """
+        patterns_data = load_dataframe(patterns_query)
+
+        trend_query = """
+            SELECT w.name AS website, r.scan_date, r.dprs_score
+            FROM risk_scores r
+            JOIN websites w ON r.website_id = w.id
+            ORDER BY r.scan_date ASC
+        """
+        raw_trend = load_dataframe(trend_query)
+        if len(raw_trend) > 0:
+            trend_data = raw_trend.pivot_table(index='scan_date', columns='website', values='dprs_score', aggfunc='mean').reset_index()
+            trend_data = trend_data.rename(columns={'scan_date': 'week'})
+            trend_data['week'] = trend_data['week'].astype(str)
+        else:
+            trend_data = pd.DataFrame()
+
+        return scores_data, patterns_data, trend_data
+    except Exception as err:
+        print(f"DB load fallback to sample data: {err}")
+        return None, None, None
+
+
 @st.cache_data
 def load_sample_data():
-    """Load sample data — replace with db_connector queries in production."""
+    """Fallback sample data if database is empty."""
     websites = ["Amazon India", "Flipkart", "Meesho", "Myntra", "Snapdeal"]
     
     scores_data = pd.DataFrame({
@@ -180,7 +239,14 @@ def load_sample_data():
     return scores_data, patterns_data, trend_data
 
 
-scores_df, patterns_df, trend_df = load_sample_data()
+# Try DB load first
+db_scores, db_patterns, db_trend = load_db_data()
+if db_scores is not None and len(db_scores) > 0:
+    scores_df, patterns_df, trend_df = db_scores, db_patterns, db_trend
+    is_live_db = True
+else:
+    scores_df, patterns_df, trend_df = load_sample_data()
+    is_live_db = False
 
 
 # ══════════════════════════════════════════════════════════════
@@ -213,8 +279,15 @@ with st.sidebar:
 
     st.markdown("<div class='sidebar-section'>", unsafe_allow_html=True)
     st.markdown("**📅 Scan Info**")
+    st.markdown(f"Data source: `{'SQLite DB' if is_live_db else 'Sample Demo'}`")
     st.markdown(f"Last scan: `{date.today().isoformat()}`")
     st.markdown(f"Total websites: `{len(scores_df)}`")
+    if st.button("🚀 Run Full Pipeline Scan", use_container_width=True):
+        with st.spinner("Scraping target websites & building analytics..."):
+            from src.run_pipeline import run_pipeline
+            run_pipeline(init_db_flag=True)
+            st.cache_data.clear()
+            st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -246,12 +319,17 @@ st.markdown("""
 # ── KPI METRICS ROW ──────────────────────────────────────────
 col1, col2, col3, col4, col5 = st.columns(5)
 
+total_patterns_cnt = filtered_scores['total_patterns'].sum() if 'total_patterns' in filtered_scores.columns else len(filtered_patterns)
+high_sev_cnt = (filtered_patterns['severity'] == 'HIGH').sum() if len(filtered_patterns) > 0 and 'severity' in filtered_patterns.columns else 0
+avg_dprs_val = f"{filtered_scores['dprs_score'].mean():.1f}" if len(filtered_scores) > 0 and 'dprs_score' in filtered_scores.columns else "0.0"
+non_comp_cnt = (filtered_scores['compliance_status'] == 'NON-COMPLIANT').sum() if len(filtered_scores) > 0 and 'compliance_status' in filtered_scores.columns else 0
+
 metrics = [
     (col1, len(filtered_scores), "Websites Scanned", "🌐"),
-    (col2, filtered_patterns['total_patterns'].sum() if 'total_patterns' in filtered_scores.columns else len(filtered_patterns), "Patterns Found", "🚨"),
-    (col3, (filtered_patterns['severity'] == 'HIGH').sum(), "HIGH Severity", "🔴"),
-    (col4, f"{filtered_scores['dprs_score'].mean():.1f}", "Avg DPRS Score", "📊"),
-    (col5, (filtered_scores['compliance_status'] == 'NON-COMPLIANT').sum(), "Non-Compliant", "⚠️"),
+    (col2, total_patterns_cnt, "Patterns Found", "🚨"),
+    (col3, high_sev_cnt, "HIGH Severity", "🔴"),
+    (col4, avg_dprs_val, "Avg DPRS Score", "📊"),
+    (col5, non_comp_cnt, "Non-Compliant", "⚠️"),
 ]
 
 for col, value, label, icon in metrics:
@@ -442,14 +520,30 @@ with tab3:
     )
     st.plotly_chart(fig_trend, use_container_width=True)
 
-    # Download report
-    csv = filtered_scores.to_csv(index=False)
-    st.download_button(
-        label="📥 Download DPRS Report (CSV)",
-        data=csv,
-        file_name=f"dprs_report_{date.today().isoformat()}.csv",
-        mime="text/csv"
-    )
+    # Download reports
+    col_dl1, col_dl2 = st.columns(2)
+    with col_dl1:
+        csv = filtered_scores.to_csv(index=False)
+        st.download_button(
+            label="📥 Download DPRS Report (CSV)",
+            data=csv,
+            file_name=f"dprs_report_{date.today().isoformat()}.csv",
+            mime="text/csv"
+        )
+    with col_dl2:
+        try:
+            from src.pdf_report_generator import generate_pdf_report
+            pdf_file_path = generate_pdf_report()
+            with open(pdf_file_path, "rb") as pdf_file:
+                pdf_bytes = pdf_file.read()
+            st.download_button(
+                label="📄 Download Executive Audit Report (PDF)",
+                data=pdf_bytes,
+                file_name=f"DPIS_Executive_Audit_Report_{date.today().isoformat()}.pdf",
+                mime="application/pdf"
+            )
+        except Exception:
+            pass
 
 
 # ────────────────────────────────────────────────────────────
@@ -470,53 +564,80 @@ with tab4:
         scan_clicked = st.button("🔍 Scan Now", type="primary", use_container_width=True)
 
     if scan_clicked and scan_url:
-        with st.spinner(f"🔍 Scanning {scan_url} for dark patterns..."):
-            progress = st.progress(0)
-            for i in range(100):
-                time.sleep(0.025)
-                progress.progress(i + 1)
+        with st.spinner(f"🔍 Scraping and analyzing `{scan_url}` for dark patterns..."):
+            scraper = EcommerceScraper(delay_range=(0.5, 1.0))
+            classifier = DarkPatternClassifier()
 
-        # Simulate scan results
-        st.success(f"✅ Scan complete for: `{scan_url}`")
-        
-        demo_results = [
-            {"pattern": "Fake Countdown Timer", "severity": "HIGH", "confidence": "94%",
-             "evidence": "Timer showing '02:30:00' detected — resets on page refresh"},
-            {"pattern": "Fake Scarcity",        "severity": "MEDIUM", "confidence": "87%",
-             "evidence": "Text: 'Only 3 left in stock!' found on 8 products simultaneously"},
-        ]
+            # Perform actual live scrape
+            scraped_result = scraper.scrape_page(scan_url, "live_scan")
 
-        col_score, col_status = st.columns(2)
-        with col_score:
-            st.markdown("""
-            <div class='metric-card'>
-                <div style='font-size:1.5rem'>📊</div>
-                <div class='metric-value'>72.5</div>
-                <div class='metric-label'>DPRS Score</div>
-            </div>""", unsafe_allow_html=True)
-        with col_status:
-            st.markdown("""
-            <div class='metric-card'>
-                <div style='font-size:1.5rem'>🚨</div>
-                <div class='metric-value' style='color:#EF4444'>NON-COMPLIANT</div>
-                <div class='metric-label'>Compliance Status</div>
-            </div>""", unsafe_allow_html=True)
+            if scraped_result and "raw_html" in scraped_result:
+                if scraped_result.get("status_code", 200) != 200:
+                    st.warning(f"⚠️ Note: The target web server returned HTTP Status {scraped_result['status_code']}. Analyzing returned content...")
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("**🔴 Detected Dark Patterns:**")
-        for r in demo_results:
-            sev_color = "#EF4444" if r['severity'] == 'HIGH' else "#F59E0B"
-            st.markdown(f"""
-            <div style='background:rgba(31,41,55,0.8); border-left:4px solid {sev_color};
-                        padding:1rem; border-radius:0 10px 10px 0; margin-bottom:0.8rem;'>
-                <strong style='color:#F9FAFB;'>{r['pattern']}</strong> 
-                <span style='color:{sev_color}; margin-left:10px; font-size:0.82rem; font-weight:600;'>
-                    ● {r['severity']}
-                </span>
-                <span style='color:#6B7280; float:right; font-size:0.82rem;'>Confidence: {r['confidence']}</span>
-                <p style='color:#9CA3AF; margin:0.5rem 0 0; font-size:0.88rem;'>{r['evidence']}</p>
-            </div>
-            """, unsafe_allow_html=True)
+                # Classify HTML content
+                results = classifier.classify_html(scraped_result["raw_html"], scan_url)
+                score_info = classifier.compute_dprs(results)
+                
+                # Save live scan result into database with deduplication
+                try:
+                    save_live_scan_to_db(
+                        page_url=scraped_result["page_url"],
+                        page_type=scraped_result.get("page_type", "custom"),
+                        raw_content=scraped_result.get("raw_text", ""),
+                        status_code=scraped_result.get("status_code", 200),
+                        detected_patterns=results,
+                        score_info=score_info
+                    )
+                    st.cache_data.clear()
+                    st.success(f"✅ Live scan complete & saved to Dashboard database for: `{scan_url}`")
+                    st.info("💡 Overview Dashboard, Pattern Deep Dive, and Trend Analysis have been updated with this scanned site!")
+                except Exception as save_err:
+                    st.success(f"✅ Live scan complete for: `{scan_url}`")
+                
+                col_score, col_status = st.columns(2)
+                dprs_val = score_info["dprs_score"]
+                status_val = score_info["compliance_status"]
+                status_color = "#10B981" if status_val == "COMPLIANT" else "#F59E0B" if status_val == "AT RISK" else "#EF4444"
+                
+                with col_score:
+                    st.markdown(f"""
+                    <div class='metric-card'>
+                        <div style='font-size:1.5rem'>📊</div>
+                        <div class='metric-value'>{dprs_val:.1f}</div>
+                        <div class='metric-label'>DPRS Score</div>
+                    </div>""", unsafe_allow_html=True)
+                with col_status:
+                    st.markdown(f"""
+                    <div class='metric-card'>
+                        <div style='font-size:1.5rem'>🚨</div>
+                        <div class='metric-value' style='color:{status_color}'>{status_val}</div>
+                        <div class='metric-label'>Compliance Status</div>
+                    </div>""", unsafe_allow_html=True)
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                if results:
+                    st.markdown(f"**🔴 Detected Dark Patterns ({len(results)}):**")
+                    for r in results:
+                        sev_color = "#EF4444" if r['severity'] == 'HIGH' else "#F59E0B" if r['severity'] == 'MEDIUM' else "#10B981"
+                        conf_pct = f"{int(r['confidence'] * 100)}%"
+                        st.markdown(f"""
+                        <div style='background:rgba(31,41,55,0.8); border-left:4px solid {sev_color};
+                                    padding:1rem; border-radius:0 10px 10px 0; margin-bottom:0.8rem;'>
+                            <strong style='color:#F9FAFB;'>{r['pattern_name']}</strong> 
+                            <span style='color:{sev_color}; margin-left:10px; font-size:0.82rem; font-weight:600;'>
+                                ● {r['severity']} ({r['pattern_type']})
+                            </span>
+                            <span style='color:#6B7280; float:right; font-size:0.82rem;'>Confidence: {conf_pct}</span>
+                            <p style='color:#9CA3AF; margin:0.5rem 0 0; font-size:0.88rem;'>Evidence: "{r['evidence']}"</p>
+                        </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.success("🎉 No dark patterns detected on this page! It appears to be compliant.")
+            elif scraped_result and "error" in scraped_result:
+                st.error(f"❌ Scraper error: {scraped_result['error']}")
+            else:
+                st.error("❌ Failed to fetch or scrape the provided URL. Please verify your internet connection and the web link.")
     elif scan_clicked:
         st.warning("⚠️ Please enter a valid URL to scan.")
 

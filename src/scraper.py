@@ -87,14 +87,16 @@ class EcommerceScraper:
         self.delay_range = delay_range
         self.session = requests.Session()
 
-    def _get_headers(self) -> Dict:
-        """Returns randomized headers to avoid bot detection."""
+    def _get_headers(self, fallback: bool = False) -> Dict:
+        """Returns randomized headers or standard Chrome fallback to avoid bot blocks."""
+        user_agent_str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" if fallback else ua.random
         return {
-            "User-Agent": ua.random,
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "en-IN,en;q=0.9,hi;q=0.8",
+            "User-Agent": user_agent_str,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9,hi;q=0.8",
             "Accept-Encoding": "gzip, deflate, br",
             "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
             "Referer": "https://www.google.com/",
         }
 
@@ -104,52 +106,67 @@ class EcommerceScraper:
         print(f"   ⏳ Waiting {delay:.1f}s before next request...")
         time.sleep(delay)
 
-    def scrape_page(self, url: str, page_type: str) -> Optional[Dict]:
+    def scrape_page(self, url: str, page_type: str = "custom") -> Optional[Dict]:
         """
-        Scrapes a single page and returns extracted content.
+        Scrapes a single page with URL normalization and fallback retries.
         
         Args:
             url: URL to scrape
-            page_type: 'homepage' | 'product' | 'checkout' | 'search' | 'deals'
+            page_type: 'homepage' | 'product' | 'checkout' | 'search' | 'deals' | 'custom'
             
         Returns:
-            Dict with url, type, html, text, word_count, status_code
-            Returns None if scraping fails.
+            Dict with page_url, page_type, raw_html, raw_text, word_count, status_code
         """
-        try:
-            print(f"   🔍 Scraping [{page_type}]: {url}")
-            response = self.session.get(
-                url,
-                headers=self._get_headers(),
-                timeout=15
-            )
+        # 1. URL Normalization
+        url = url.strip()
+        if not url.startswith("http://") and not url.startswith("https://"):
+            url = "https://" + url
 
-            if response.status_code != 200:
-                print(f"   ⚠️  Status {response.status_code} for {url}")
-                return None
+        # 2. Request execution with fallback retries
+        last_error = None
+        for attempt in [False, True]:  # First attempt with random UA, retry with standard Chrome UA
+            try:
+                print(f"   🔍 Scraping [{page_type}]: {url} (Attempt {'2' if attempt else '1'})")
+                response = self.session.get(
+                    url,
+                    headers=self._get_headers(fallback=attempt),
+                    timeout=15,
+                    allow_redirects=True
+                )
 
-            soup = BeautifulSoup(response.text, 'html.parser')
+                if not response.text or len(response.text.strip()) == 0:
+                    if not attempt:
+                        continue  # Retry with standard UA
+                    return {"error": f"Empty response received (HTTP {response.status_code})", "status_code": response.status_code}
 
-            # Remove script and style tags (not relevant for dark patterns)
-            for tag in soup(["script", "style", "meta", "noscript"]):
-                tag.decompose()
+                # Successfully fetched content
+                soup = BeautifulSoup(response.text, 'html.parser')
 
-            text_content = soup.get_text(separator=' ', strip=True)
-            text_content = ' '.join(text_content.split())  # Normalize whitespace
+                # Remove script and style tags
+                for tag in soup(["script", "style", "meta", "noscript"]):
+                    tag.decompose()
 
-            return {
-                "page_url": url,
-                "page_type": page_type,
-                "raw_html": response.text[:50000],   # Cap at 50k chars
-                "raw_text": text_content[:30000],     # Cap text at 30k chars
-                "word_count": len(text_content.split()),
-                "status_code": response.status_code,
-                "scraped_at": datetime.now().isoformat()
-            }
+                text_content = soup.get_text(separator=' ', strip=True)
+                text_content = ' '.join(text_content.split())  # Normalize whitespace
 
-        except requests.exceptions.RequestException as e:
-            print(f"   ❌ Failed to scrape {url}: {e}")
-            return None
+                return {
+                    "page_url": url,
+                    "page_type": page_type,
+                    "raw_html": response.text[:50000],   # Cap at 50k chars
+                    "raw_text": text_content[:30000],     # Cap text at 30k chars
+                    "word_count": len(text_content.split()),
+                    "status_code": response.status_code,
+                    "scraped_at": datetime.now().isoformat()
+                }
+
+            except requests.exceptions.RequestException as e:
+                last_error = e
+                if not attempt:
+                    time.sleep(1)
+                    continue
+
+        print(f"   ❌ Failed to scrape {url}: {last_error}")
+        return {"error": str(last_error), "status_code": 0}
 
     def scrape_website(self, website_name: str) -> List[Dict]:
         """
