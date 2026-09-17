@@ -1,9 +1,9 @@
-﻿services:
+services:
   - type: web
     name: dark-pattern-intelligence-system
     env: python
-    buildCommand: pip install -r app/requirements.txt
+    buildCommand: pip install --upgrade pip && pip install -r app/requirements.txt
     startCommand: streamlit run app/app.py --server.port=10000 --server.address=0.0.0.0
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.11.9
