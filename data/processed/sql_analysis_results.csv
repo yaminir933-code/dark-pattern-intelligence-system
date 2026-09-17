@@ -1,0 +1,6 @@
+website_name,total_patterns_detected,high_severity_count,medium_severity_count,low_severity_count,avg_confidence_score
+Snapdeal,10,0,10,0,0.85
+Meesho,2,0,2,0,0.85
+Amazon India,1,0,1,0,0.85
+Myntra,0,0,0,0,
+Flipkart,0,0,0,0,

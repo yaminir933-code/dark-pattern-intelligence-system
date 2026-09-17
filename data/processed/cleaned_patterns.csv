@@ -1,0 +1,4 @@
+pattern_name,pattern_type,severity,evidence,element_tag,confidence,match_source,website_name,page_url,page_type
+Disguised Ads,Misdirection,MEDIUM,quires JavaScript. Enable JavaScript and then reload the page.,text,0.85,keyword,Amazon India,https://www.amazon.in,Homepage
+Fake Scarcity,Urgency,MEDIUM,p on the Go Download the app and get exciting app only offers at your fingertips 100% Secure Payments Privacy Policy Terms of Sale Terms of Use Report,text,0.85,keyword,Snapdeal,https://www.snapdeal.com/offers,Deals
+Disguised Ads,Misdirection,MEDIUM,"SnapDeal.com - 404 – Page not found v2 India's leading online shopping destination How can we help you? Sorry!! No result found for ""OK"".Please press",text,0.85,keyword,Snapdeal,https://www.snapdeal.com/offers,Deals

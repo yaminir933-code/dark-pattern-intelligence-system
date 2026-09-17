@@ -1,0 +1,11 @@
+Column,Data_Type,Missing_Values,Missing_Percentage,Unique_Values
+pattern_name,object,0,0.0,2
+pattern_type,object,0,0.0,2
+severity,object,0,0.0,1
+evidence,object,0,0.0,3
+element_tag,object,0,0.0,1
+confidence,float64,0,0.0,1
+match_source,object,0,0.0,1
+website_name,object,0,0.0,2
+page_url,object,0,0.0,2
+page_type,object,0,0.0,2

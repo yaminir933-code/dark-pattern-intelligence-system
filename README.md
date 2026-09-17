@@ -1,180 +1,167 @@
-# 🕵️ Dark Pattern Intelligence System (DPIS)
+# 🛡️ Dark Pattern Intelligence System (DPIS)
+### Enterprise E-Commerce UX Compliance, Statistical Analytics & MIS Reporting Platform
 
-![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-green?logo=postgresql)
-![Power BI](https://img.shields.io/badge/PowerBI-Dashboard-yellow?logo=powerbi)
-![Streamlit](https://img.shields.io/badge/Streamlit-Deployed-red?logo=streamlit)
-![License](https://img.shields.io/badge/License-MIT-lightgrey)
+![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon_Cloud-336791?logo=postgresql&logoColor=white)
+![Power BI](https://img.shields.io/badge/Power_BI-Business_Intelligence-F2C811?logo=powerbi&logoColor=black)
+![Streamlit](https://img.shields.io/badge/Streamlit-Live_Dashboard-FF4B4B?logo=streamlit&logoColor=white)
+![Excel MIS](https://img.shields.io/badge/Excel-Advanced_MIS_Reporting-217346?logo=microsoftexcel&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-> **An end-to-end data analytics platform that automatically detects manipulative UX dark patterns on Indian e-commerce websites, computes a Dark Pattern Risk Score (DPRS), and visualizes compliance insights through Power BI and a live Streamlit dashboard.**
-
----
-
-## 🎯 Problem Statement
-
-Dark patterns are deceptive UX/UI design tactics that manipulate users into unintended actions — like hidden subscription charges, fake countdown timers, or pre-checked boxes. India's Consumer Protection Act and the EU's DSA now **legally mandate** detection and removal of such patterns.
-
-This project builds an automated intelligence system to **detect, score, and report** dark patterns across major e-commerce platforms.
+> **An end-to-end data analytics and business intelligence platform that automatically detects manipulative UX dark patterns on Indian e-commerce platforms, computes a proprietary Dark Pattern Risk Score (DPRS), performs statistical hypothesis testing and EDA, executes advanced SQL analytics, and delivers executive MIS reports & dashboards.**
 
 ---
 
-## 🛠️ Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Data Collection | Python, BeautifulSoup, Selenium |
-| Data Processing | Pandas, NumPy, NLTK, spaCy |
-| Database | PostgreSQL (Neon Cloud) |
-| Reporting | Excel (openpyxl), PDF (fpdf2) |
-| Dashboard | Power BI Desktop |
-| Web App | Streamlit |
-| Deployment | Render |
-| Version Control | GitHub |
+## 👨‍💻 Author & Portfolio Information
+- **Author**: Yamini Reddy
+- **Target Role**: Data Analyst / Business Analyst (Fresher / 0–1 Year Experience)
+- **Core Competencies Demonstrated**: Data Cleaning, Data Validation, Statistical EDA, Advanced SQL, Excel MIS Reporting, Power BI Star Schema & DAX, Python Automation, Streamlit Dashboards.
 
 ---
 
-## 📁 Project Structure
+## 🎯 Job-Ready Skill Mapping Matrix
+
+This project was specifically designed to demonstrate every core requirement listed for enterprise **Data Analyst** roles:
+
+| Job Posting Requirement | Demonstrated In Project | Project Artifact / Code File |
+| :--- | :--- | :--- |
+| **Collect Structured & Unstructured Data** | Web scraping pipeline with ethical request throttling, fake user-agents, parsing raw HTML/text. | [`src/scraper.py`](src/scraper.py)<br>[`notebooks/01_data_collection.py`](notebooks/01_data_collection.py) |
+| **Data Validation & Quality Checks** | Null audits, duplicate detection, schema validation, Tukey's IQR outlier detection, business logic checks. | [`notebooks/02_data_validation.py`](notebooks/02_data_validation.py)<br>`data/processed/data_quality_report.csv` |
+| **Data Cleaning & Preprocessing** | Standardizing case, cleaning text evidence, normalizing confidence intervals, handling missing values. | [`notebooks/02_data_validation.py`](notebooks/02_data_validation.py)<br>`data/processed/cleaned_patterns.csv` |
+| **EDA & Statistical Analysis** | Chi-Square test of independence, Pearson correlation matrix, Linear Regression trendline, distributions. | [`notebooks/03_eda_analysis.py`](notebooks/03_eda_analysis.py)<br>`data/processed/eda_*.png` |
+| **SQL (MySQL / PostgreSQL / SQLite)** | Aggregations, GROUP BY, HAVING, subqueries, Window Functions (`RANK()`, `PARTITION BY`), CTEs (`WITH`). | [`notebooks/04_sql_analysis.py`](notebooks/04_sql_analysis.py)<br>[`sql/schema.sql`](sql/schema.sql) |
+| **Advanced Excel (Pivot, Formulas, MIS)** | Automated 4-sheet formatted workbook: Executive MIS, Cross-Tab (Pivot), Benchmark, Formulas (`SUM`, `IF`). | [`src/report_generator.py`](src/report_generator.py)<br>`data/excel/executive_mis_report.xlsx` |
+| **Power BI / Tableau Familiarity** | Star Schema data model (Facts & Dimensions), pre-built analytical views, and copy-paste ready DAX formulas. | [`docs/POWER_BI_GUIDE.md`](docs/POWER_BI_GUIDE.md) |
+| **MIS Reporting & Dashboards** | Live multi-tab Streamlit web application with KPI metric cards, departmental SLA tracker, and 1-click Excel download. | [`app/app.py`](app/app.py) (Tab 5: MIS Report) |
+| **Actionable Business Insights** | Interpreting UX risk under India's CCPA 2023 Guidelines and DPDP Act with remediation recommendations. | [`notebooks/03_eda_analysis.py`](notebooks/03_eda_analysis.py) |
+
+---
+
+## 🏛️ System Architecture
+
+```
+                                  DATA COLLECTION & ETL
+                ┌────────────────────────────────────────────────────────┐
+                │  E-Commerce Platforms (Amazon, Flipkart, Meesho, etc.)  │
+                └───────────────────────────┬────────────────────────────┘
+                                            │ Python Scraper & Requests
+                                            ▼
+                                   RAW & CLEANED DATA
+                ┌────────────────────────────────────────────────────────┐
+                │   notebooks/02_data_validation.py (IQR Outlier, QA)    │
+                └───────────────────────────┬────────────────────────────┘
+                                            │
+                                            ▼
+                                 RELATIONAL STORAGE (SQL)
+                ┌────────────────────────────────────────────────────────┐
+                │      Neon PostgreSQL / Local SQLite (dpis_db.sqlite)   │
+                │        • websites          • scraped_pages             │
+                │        • dark_patterns     • risk_scores               │
+                │        • analytical views (vw_website_summary, etc.)   │
+                └───────┬───────────────────────────────────────┬────────┘
+                        │                                       │
+                        ▼                                       ▼
+             BUSINESS INTELLIGENCE                     EXECUTIVE MIS & WEB
+       ┌──────────────────────────────┐      ┌───────────────────────────────────┐
+       │   Power BI Desktop Report    │      │    Streamlit Web App (app/app.py) │
+       │   • Star Schema Data Model   │      │    • Tab 1: Overview Dashboard    │
+       │   • DAX Measure Library      │      │    • Tab 2: Pattern Deep Dive     │
+       │   • Executive Dashboards     │      │    • Tab 3: Trend Analysis        │
+       └──────────────────────────────┘      │    • Tab 4: Live Website Scanner  │
+                                             │    • Tab 5: MIS Executive Report  │
+                                             └───────────────────────────────────┘
+```
+
+---
+
+## 📂 Repository Layout
 
 ```
 dark-pattern-intelligence-system/
-├── data/
-│   ├── raw/                    ← Scraped raw data
-│   ├── processed/              ← Cleaned data
-│   └── excel/                  ← Excel reports & templates
-├── notebooks/
-│   ├── 01_data_collection.ipynb
-│   ├── 02_data_cleaning.ipynb
-│   ├── 03_eda_analysis.ipynb
-│   ├── 04_dark_pattern_classifier.ipynb
-│   ├── 05_database_load.ipynb
-│   └── 06_reporting.ipynb
-├── src/
-│   ├── scraper.py
-│   ├── classifier.py
-│   ├── db_connector.py
-│   └── report_generator.py
 ├── app/
-│   ├── app.py                  ← Streamlit app
-│   └── requirements.txt
-├── powerbi/
-│   └── dpis_dashboard.pbix
-├── sql/
-│   ├── schema.sql
-│   └── queries.sql
+│   └── app.py                      # Streamlit interactive application (5 tabs)
+├── data/
+│   ├── excel/                      # Generated Excel workbooks & MIS exports
+│   ├── processed/                  # Cleaned CSVs, QA reports, SQL outputs
+│   └── raw/                        # Raw scraped data snapshots
 ├── docs/
-│   ├── project_documentation.md
-│   ├── data_dictionary.md
-│   └── user_guide.md
-├── .env.example
-├── .gitignore
-├── requirements.txt
-└── README.md
+│   ├── data_dictionary.md          # Complete data dictionary & schema definitions
+│   └── POWER_BI_GUIDE.md           # Star Schema modeling, DAX formulas & visuals guide
+├── notebooks/
+│   ├── 01_data_collection.py       # Automated data scraping & database loading
+│   ├── 02_data_validation.py       # QA checks, cleaning & IQR outlier detection
+│   ├── 03_eda_analysis.py          # Chi-square test, Pearson correlation, regression
+│   └── 04_sql_analysis.py          # Advanced SQL queries, window functions & CTEs
+├── sql/
+│   └── schema.sql                  # PostgreSQL schema, indexes, and Power BI views
+├── src/
+│   ├── classifier.py               # Dark pattern detection rules & NLP matcher
+│   ├── db_connector.py             # Neon PostgreSQL & SQLite hybrid connector
+│   ├── report_generator.py         # Multi-sheet openpyxl Excel & PDF generator
+│   └── scraper.py                  # BeautifulSoup & request scraper
+├── requirements.txt                # Python dependencies
+├── run_dashboard.bat               # 1-click Windows launcher for Streamlit
+└── README.md                       # Documentation & portfolio showcase
 ```
 
 ---
 
-## 🕵️ Dark Patterns Detected (12 Categories)
+## 🚀 How to Run the Project Locally
 
-| # | Pattern | Severity |
-|---|---------|---------|
-| 1 | Fake Countdown Timer | 🔴 HIGH |
-| 2 | Hidden Subscription | 🔴 HIGH |
-| 3 | Pre-checked Boxes | 🔴 HIGH |
-| 4 | Fake Scarcity ("Only X left") | 🟡 MEDIUM |
-| 5 | Price Drip (hidden fees) | 🔴 HIGH |
-| 6 | Roach Motel | 🔴 HIGH |
-| 7 | Confirm Shaming | 🟡 MEDIUM |
-| 8 | Disguised Ads | 🟡 MEDIUM |
-| 9 | Friend Spam | 🟡 MEDIUM |
-| 10 | Misleading Free Trial | 🔴 HIGH |
-| 11 | Price Comparison Prevention | 🟢 LOW |
-| 12 | Bait and Switch | 🔴 HIGH |
+### 1. Prerequisites
+Ensure you have **Python 3.10+** (or Anaconda) installed on your system.
 
----
-
-## 📊 Dark Pattern Risk Score (DPRS)
-
-```
-DPRS = (HIGH × 10 + MEDIUM × 5 + LOW × 2) / Total_Possible_Score × 100
-
-Score Range:
-  0–30   → 🟢 LOW RISK    (Compliant)
-  31–60  → 🟡 MEDIUM RISK (Needs Improvement)
-  61–100 → 🔴 HIGH RISK   (Non-Compliant)
-```
-
----
-
-## 🚀 How to Run
-
-### 1. Clone Repository
+### 2. Install Dependencies
 ```bash
-git clone https://github.com/YOUR_USERNAME/dark-pattern-intelligence-system.git
-cd dark-pattern-intelligence-system
-```
-
-### 2. Create Virtual Environment (Anaconda)
-```bash
-conda create -n dpis python=3.11
-conda activate dpis
 pip install -r requirements.txt
 ```
 
-### 3. Setup Environment Variables
+### 3. Run Notebooks in Sequence
 ```bash
-cp .env.example .env
-# Edit .env with your Neon PostgreSQL credentials
+# Step 1: Collect & Scrape Data
+python notebooks/01_data_collection.py
+
+# Step 2: Validate, Clean & Detect Outliers
+python notebooks/02_data_validation.py
+
+# Step 3: Run Statistical EDA & Generate Visuals
+python notebooks/03_eda_analysis.py
+
+# Step 4: Run Advanced SQL Analytics
+python notebooks/04_sql_analysis.py
 ```
 
-### 4. Initialize Database
+### 4. Launch the Interactive MIS Streamlit App
+Double-click `run_dashboard.bat` or run:
 ```bash
-# Run schema.sql in your Neon PostgreSQL console
+streamlit run app/app.py
 ```
-
-### 5. Run Notebooks in Order
-```
-notebooks/01_data_collection.ipynb
-notebooks/02_data_cleaning.ipynb
-...
-```
-
-### 6. Run Web App Locally
-```bash
-cd app
-streamlit run app.py
-```
+Open your browser at `http://localhost:8501` to view:
+- **Tab 1: Overview Dashboard** — DPRS risk distribution, top risky platforms, severity breakdown.
+- **Tab 2: Pattern Deep Dive** — Evidence text inspection, keyword matching, confidence scores.
+- **Tab 3: Trend Analysis** — Historical risk trajectory and pattern shifts over time.
+- **Tab 4: Live Scanner** — Real-time dark pattern detection on any user-provided URL.
+- **Tab 5: MIS Executive Report** — Compliance KPI cards, platform benchmarking table, departmental SLA resolution tracker, and 1-click download of the multi-sheet Excel MIS report.
 
 ---
 
-## 📈 Results
+## 📊 Sample Visuals & Outputs
 
-- **5 websites scanned**: Amazon.in, Flipkart, Meesho, Myntra, Snapdeal
-- **5,000+ pages analyzed**
-- **12 dark pattern categories detected**
-- **DPRS scores computed** for all websites
-- **Power BI dashboard** with 4 pages of insights
-- **Live web app** at: https://dpis-app.onrender.com
-
----
-
-## 📋 Excel Reports
-
-| File | Purpose |
-|------|---------|
-| `dark_pattern_audit_template.xlsx` | Manual audit worksheet |
-| `kpi_tracker.xlsx` | Weekly KPI tracking with charts |
-| `website_scores.xlsx` | Final DPRS scores with color coding |
+| Analysis / Output | Description | Location |
+| :--- | :--- | :--- |
+| **Data Quality Report** | Field-level null audits, unique value counts, and rule verification. | `data/processed/data_quality_report.csv` |
+| **EDA Charts** | Severity distribution, platform bar charts, evidence word cloud. | `data/processed/eda_*.png` |
+| **Correlation Matrix** | Pearson correlation heatmap of severity vs confidence vs length. | `data/processed/eda_06_correlation_heatmap.png` |
+| **Linear Regression** | Trendline showing risk factor interactions. | `data/processed/eda_07_regression_trend.png` |
+| **SQL Analysis CSV** | Query results showing platform breakdowns and benchmark classifications. | `data/processed/sql_analysis_results.csv` |
+| **Multi-Sheet MIS Excel** | 4-sheet formatted executive workbook with formulas and cross-tabs. | `data/excel/executive_mis_report.xlsx` |
 
 ---
 
-## 👩‍💻 Author
-
-**Yamini Reddy**  
-Data Analyst | Python | SQL | Power BI | Excel  
-[LinkedIn](#) | [GitHub](#)
+## ⚖️ Regulatory Compliance Context
+This platform is directly aligned with:
+- **India Central Consumer Protection Authority (CCPA) 2023 Guidelines**: Prohibiting 13 specified dark patterns (False Urgency, Basket Sneaking, Confirm Shaming, Forced Actions, Subscription Traps, etc.).
+- **Digital Personal Data Protection (DPDP) Act, 2023**: Mandating transparent, non-deceptive consent architecture.
 
 ---
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
+*Built with passion by **Yamini Reddy** to empower ethical product design and data-driven compliance.*

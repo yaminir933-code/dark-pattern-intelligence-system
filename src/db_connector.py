@@ -54,7 +54,9 @@ def get_connection_string() -> str:
             db_url = f"postgresql://{user}:{password}@{host}:{port}/{dbname}?sslmode={sslmode}"
         else:
             # Fallback to local SQLite database
-            db_url = "sqlite:///dpis_db.sqlite"
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            sqlite_path = os.path.join(base_dir, "dpis_db.sqlite").replace('\\', '/')
+            db_url = f"sqlite:///{sqlite_path}"
     return db_url
 
 

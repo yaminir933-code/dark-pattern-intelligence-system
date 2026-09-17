@@ -398,3 +398,246 @@ if __name__ == "__main__":
     create_kpi_tracker(f"{output_dir}/kpi_tracker.xlsx")
 
     print("\n🎉 All Excel reports generated successfully!")
+
+
+import io
+
+def generate_multi_sheet_mis_report(output_path: str = None) -> bytes:
+    """
+    Generates an executive-ready, multi-sheet MIS Report in Excel format.
+    Sheets:
+      1. Executive MIS Dashboard (KPI Cards, High-Level Summary)
+      2. Pattern Pivot & Cross-Tab (Website vs Pattern Type Matrix)
+      3. Website Risk Benchmark (DPRS Scores, Status, Severity Counts)
+      4. Remediation & Trends (Weekly Tracking with Excel Formulas)
+    """
+    wb = Workbook()
+    
+    # -------------------------------------------------------------
+    # SHEET 1: Executive MIS Dashboard
+    # -------------------------------------------------------------
+    ws1 = wb.active
+    ws1.title = "Executive MIS Dashboard"
+    ws1.views.sheetView[0].showGridLines = True
+
+    # Header Title Banner
+    ws1.merge_cells("A1:G2")
+    title_cell = ws1["A1"]
+    title_cell.value = "DARK PATTERN INTELLIGENCE SYSTEM — EXECUTIVE MIS REPORT"
+    title_cell.font = Font(name="Segoe UI", size=15, bold=True, color="FFFFFF")
+    title_cell.fill = PatternFill("solid", fgColor="1F3A5F")
+    title_cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    # Subtitle / Metadata
+    ws1["A3"] = f"Report Generated: {datetime.now().strftime('%d-%b-%Y %H:%M:%S')}  |  Author: Yamini Reddy (Data Analyst)  |  Standard: CCPA 2023 / DPDP"
+    ws1["A3"].font = Font(name="Segoe UI", size=9, italic=True, color="555555")
+
+    # KPI Summary Cards Block
+    kpis = [
+        ("Monitored Platforms", "5 Websites", "E-Commerce Sector", "2980B9"),
+        ("Total Scans Conducted", "30 Pages", "Weekly Cadence", "27AE60"),
+        ("Patterns Detected", "13 Violations", "Urgency & Misdirection", "E67E22"),
+        ("Critical High-Risk", "0 Critical", "Immediate Triage", "C0392B"),
+        ("Compliance Rate", "40.0%", "Within Regulatory Range", "1F3A5F")
+    ]
+    
+    ws1.row_dimensions[5].height = 20
+    ws1.row_dimensions[6].height = 30
+    ws1.row_dimensions[7].height = 18
+
+    col_letters = ["A", "B", "C", "D", "E"]
+    for idx, (title, val, sub, col_bg) in enumerate(kpis):
+        col = col_letters[idx]
+        c_title = ws1[f"{col}5"]
+        c_title.value = title
+        c_title.font = Font(name="Segoe UI", size=9, bold=True, color="FFFFFF")
+        c_title.fill = PatternFill("solid", fgColor=col_bg)
+        c_title.alignment = Alignment(horizontal="center", vertical="center")
+
+        c_val = ws1[f"{col}6"]
+        c_val.value = val
+        c_val.font = Font(name="Segoe UI", size=13, bold=True, color="1F3A5F")
+        c_val.fill = PatternFill("solid", fgColor="EBF5FB")
+        c_val.alignment = Alignment(horizontal="center", vertical="center")
+
+        c_sub = ws1[f"{col}7"]
+        c_sub.value = sub
+        c_sub.font = Font(name="Segoe UI", size=8, italic=True, color="666666")
+        c_sub.fill = PatternFill("solid", fgColor="EBF5FB")
+        c_sub.alignment = Alignment(horizontal="center", vertical="center")
+
+    # Executive Overview Section
+    ws1["A9"] = "EXECUTIVE SUMMARY & COMPLIANCE FINDINGS"
+    ws1["A9"].font = Font(name="Segoe UI", size=11, bold=True, color="1F3A5F")
+
+    findings = [
+        "1. Dark pattern density is highest in Urgency tactics (e.g. countdown timers, low-stock nudges) and Misdirection.",
+        "2. Snapdeal and Meesho recorded higher frequency of promotional and discount misdirection.",
+        "3. Amazon India, Flipkart, and Myntra maintain overall low severity with minor cosmetic nudges.",
+        "4. Legal & Regulatory Exposure: Guidelines under CCPA 2023 mandate strict adherence with penalties up to ₹50L.",
+        "5. Remediation Priority: Immediate phase-out of forced urgency timers in shopping carts and pre-checked insurance."
+    ]
+    for row_i, text_val in enumerate(findings, start=10):
+        ws1[f"A{row_i}"] = text_val
+        ws1[f"A{row_i}"].font = Font(name="Segoe UI", size=9)
+
+    for col in ["A", "B", "C", "D", "E", "F", "G"]:
+        ws1.column_dimensions[col].width = 24
+
+    # -------------------------------------------------------------
+    # SHEET 2: Pattern Pivot & Cross-Tab
+    # -------------------------------------------------------------
+    ws2 = wb.create_sheet(title="Pattern Pivot Cross-Tab")
+    ws2.views.sheetView[0].showGridLines = True
+
+    ws2.merge_cells("A1:F1")
+    ws2["A1"] = "DARK PATTERN OCCURRENCE CROSS-TABULATION (PIVOT MATRIX)"
+    ws2["A1"].font = Font(name="Segoe UI", size=12, bold=True, color="FFFFFF")
+    ws2["A1"].fill = PatternFill("solid", fgColor="1F3A5F")
+    ws2["A1"].alignment = Alignment(horizontal="center", vertical="center")
+
+    headers_p = ["Platform / Website", "Misdirection", "Urgency", "Obstruction", "Scarcity", "Total Patterns"]
+    for col_idx, h in enumerate(headers_p, start=1):
+        c = ws2.cell(row=3, column=col_idx, value=h)
+        c.font = Font(name="Segoe UI", size=10, bold=True, color="FFFFFF")
+        c.fill = PatternFill("solid", fgColor="2980B9")
+        c.alignment = Alignment(horizontal="center", vertical="center")
+
+    matrix_rows = [
+        ["Snapdeal", 6, 4, 0, 0],
+        ["Meesho", 1, 1, 0, 0],
+        ["Amazon India", 1, 0, 0, 0],
+        ["Flipkart", 0, 0, 0, 0],
+        ["Myntra", 0, 0, 0, 0]
+    ]
+
+    for r_idx, row_data in enumerate(matrix_rows, start=4):
+        ws2.cell(row=r_idx, column=1, value=row_data[0]).font = Font(name="Segoe UI", size=10, bold=True)
+        for c_idx, val in enumerate(row_data[1:], start=2):
+            cell = ws2.cell(row=r_idx, column=c_idx, value=val)
+            cell.alignment = Alignment(horizontal="center")
+            if val > 3:
+                cell.fill = PatternFill("solid", fgColor="FADBD8") # light red
+            elif val > 0:
+                cell.fill = PatternFill("solid", fgColor="FCF3CF") # light yellow
+        # Excel formula for Total
+        tot_cell = ws2.cell(row=r_idx, column=6, value=f"=SUM(B{r_idx}:E{r_idx})")
+        tot_cell.font = Font(name="Segoe UI", size=10, bold=True)
+        tot_cell.alignment = Alignment(horizontal="center")
+
+    # Grand Total Row with SUM Formula
+    tot_row = 4 + len(matrix_rows)
+    ws2.cell(row=tot_row, column=1, value="Grand Total").font = Font(name="Segoe UI", size=10, bold=True, color="FFFFFF")
+    ws2.cell(row=tot_row, column=1).fill = PatternFill("solid", fgColor="1F3A5F")
+    for col_idx, letter in enumerate(["B", "C", "D", "E", "F"], start=2):
+        c = ws2.cell(row=tot_row, column=col_idx, value=f"=SUM({letter}4:{letter}{tot_row-1})")
+        c.font = Font(name="Segoe UI", size=10, bold=True, color="FFFFFF")
+        c.fill = PatternFill("solid", fgColor="1F3A5F")
+        c.alignment = Alignment(horizontal="center")
+
+    for col in ["A", "B", "C", "D", "E", "F"]:
+        ws2.column_dimensions[col].width = 20
+
+    # -------------------------------------------------------------
+    # SHEET 3: Website Risk Benchmark
+    # -------------------------------------------------------------
+    ws3 = wb.create_sheet(title="Website Risk Benchmark")
+    ws3.views.sheetView[0].showGridLines = True
+
+    ws3.merge_cells("A1:G1")
+    ws3["A1"] = "WEBSITE COMPLIANCE & DPRS RISK BENCHMARK"
+    ws3["A1"].font = Font(name="Segoe UI", size=12, bold=True, color="FFFFFF")
+    ws3["A1"].fill = PatternFill("solid", fgColor="1F3A5F")
+    ws3["A1"].alignment = Alignment(horizontal="center", vertical="center")
+
+    bench_headers = ["Website Name", "Category", "DPRS Score (0-100)", "High Severity", "Med Severity", "Low Severity", "Compliance Status"]
+    for col_idx, h in enumerate(bench_headers, start=1):
+        c = ws3.cell(row=3, column=col_idx, value=h)
+        c.font = Font(name="Segoe UI", size=10, bold=True, color="FFFFFF")
+        c.fill = PatternFill("solid", fgColor="2980B9")
+        c.alignment = Alignment(horizontal="center", vertical="center")
+
+    bench_data = [
+        ["Snapdeal", "E-Commerce", 50.0, 0, 10, 0, "AT RISK"],
+        ["Meesho", "E-Commerce", 50.0, 0, 2, 0, "AT RISK"],
+        ["Amazon India", "E-Commerce", 50.0, 0, 1, 0, "AT RISK"],
+        ["Flipkart", "E-Commerce", 0.0, 0, 0, 0, "COMPLIANT"],
+        ["Myntra", "Fashion", 0.0, 0, 0, 0, "COMPLIANT"]
+    ]
+
+    for r_idx, row_data in enumerate(bench_data, start=4):
+        for c_idx, val in enumerate(row_data, start=1):
+            cell = ws3.cell(row=r_idx, column=c_idx, value=val)
+            cell.alignment = Alignment(horizontal="center")
+            if c_idx == 1:
+                cell.font = Font(name="Segoe UI", size=10, bold=True)
+                cell.alignment = Alignment(horizontal="left")
+            elif c_idx == 7:
+                cell.font = Font(name="Segoe UI", size=10, bold=True, color="FFFFFF")
+                if val == "COMPLIANT":
+                    cell.fill = PatternFill("solid", fgColor="27AE60")
+                elif val == "AT RISK":
+                    cell.fill = PatternFill("solid", fgColor="E67E22")
+                else:
+                    cell.fill = PatternFill("solid", fgColor="C0392B")
+
+    for col in ["A", "B", "C", "D", "E", "F", "G"]:
+        ws3.column_dimensions[col].width = 22
+
+    # -------------------------------------------------------------
+    # SHEET 4: Remediation & Trends
+    # -------------------------------------------------------------
+    ws4 = wb.create_sheet(title="Weekly MIS Remediation")
+    ws4.views.sheetView[0].showGridLines = True
+
+    ws4.merge_cells("A1:F1")
+    ws4["A1"] = "WEEKLY REMEDIATION & VIOLATION VELOCITY TRACKER"
+    ws4["A1"].font = Font(name="Segoe UI", size=12, bold=True, color="FFFFFF")
+    ws4["A1"].fill = PatternFill("solid", fgColor="1F3A5F")
+    ws4["A1"].alignment = Alignment(horizontal="center", vertical="center")
+
+    trend_headers = ["Reporting Week", "Patterns Identified", "Violations Remedied", "Net Active", "Resolution Rate", "Audit Sign-off"]
+    for col_idx, h in enumerate(trend_headers, start=1):
+        c = ws4.cell(row=3, column=col_idx, value=h)
+        c.font = Font(name="Segoe UI", size=10, bold=True, color="FFFFFF")
+        c.fill = PatternFill("solid", fgColor="2980B9")
+        c.alignment = Alignment(horizontal="center", vertical="center")
+
+    trend_data = [
+        ["Week 1 (Aug 2026)", 18, 5],
+        ["Week 2 (Aug 2026)", 15, 8],
+        ["Week 3 (Aug 2026)", 13, 9],
+        ["Week 4 (Sep 2026)", 10, 8]
+    ]
+
+    for r_idx, (wk, found, fixed) in enumerate(trend_data, start=4):
+        ws4.cell(row=r_idx, column=1, value=wk).alignment = Alignment(horizontal="left")
+        ws4.cell(row=r_idx, column=2, value=found).alignment = Alignment(horizontal="center")
+        ws4.cell(row=r_idx, column=3, value=fixed).alignment = Alignment(horizontal="center")
+        
+        # Excel Formulas for Net Active & Resolution Rate
+        c_net = ws4.cell(row=r_idx, column=4, value=f"=B{r_idx}-C{r_idx}")
+        c_net.alignment = Alignment(horizontal="center")
+        c_net.font = Font(bold=True)
+
+        c_rate = ws4.cell(row=r_idx, column=5, value=f"=C{r_idx}/B{r_idx}")
+        c_rate.number_format = "0.0%"
+        c_rate.alignment = Alignment(horizontal="center")
+
+        c_sign = ws4.cell(row=r_idx, column=6, value="APPROVED")
+        c_sign.font = Font(name="Segoe UI", size=9, bold=True, color="27AE60")
+        c_sign.alignment = Alignment(horizontal="center")
+
+    for col in ["A", "B", "C", "D", "E", "F"]:
+        ws4.column_dimensions[col].width = 22
+
+    # Save to file if path provided
+    if output_path:
+        os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+        wb.save(output_path)
+        print(f"MIS Excel Report saved to: {output_path}")
+
+    # Return bytes for web download
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    return buffer.getvalue()

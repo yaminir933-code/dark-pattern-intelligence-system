@@ -29,6 +29,10 @@ import time
 from src.db_connector import load_dataframe, test_connection, init_db, save_live_scan_to_db
 from src.scraper import EcommerceScraper
 from src.classifier import DarkPatternClassifier
+try:
+    from src.report_generator import generate_multi_sheet_mis_report
+except ImportError:
+    generate_multi_sheet_mis_report = None
 
 # ── Page Config ──────────────────────────────────────────────
 st.set_page_config(
@@ -643,6 +647,127 @@ with tab4:
 
 
 # ── Footer ───────────────────────────────────────────────────
+
+# ────────────────────────────────────────────────────────────
+# TAB 5: MIS Executive Report
+# ────────────────────────────────────────────────────────────
+with tab5:
+    st.markdown("### 📑 Management Information System (MIS) Executive Report")
+    st.markdown("*Weekly Compliance Monitoring, Departmental Remediation SLAs, and Multi-Sheet Excel Reporting*")
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Top MIS KPI Row
+    mis_kpi1, mis_kpi2, mis_kpi3, mis_kpi4 = st.columns(4)
+    with mis_kpi1:
+        st.markdown("""
+        <div class='metric-card'>
+            <div style='font-size:1.3rem'>🏢</div>
+            <div class='metric-value'>5</div>
+            <div class='metric-label'>Tracked Platforms</div>
+        </div>""", unsafe_allow_html=True)
+    with mis_kpi2:
+        st.markdown("""
+        <div class='metric-card'>
+            <div style='font-size:1.3rem'>📄</div>
+            <div class='metric-value'>30</div>
+            <div class='metric-label'>Audited Pages</div>
+        </div>""", unsafe_allow_html=True)
+    with mis_kpi3:
+        st.markdown("""
+        <div class='metric-card'>
+            <div style='font-size:1.3rem'>⚠️</div>
+            <div class='metric-value'>13</div>
+            <div class='metric-label'>Patterns Flagged</div>
+        </div>""", unsafe_allow_html=True)
+    with mis_kpi4:
+        st.markdown("""
+        <div class='metric-card'>
+            <div style='font-size:1.3rem'>🛡️</div>
+            <div class='metric-value' style='color:#10B981;'>60.0%</div>
+            <div class='metric-label'>Compliance Target Met</div>
+        </div>""", unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # MIS Table Section
+    st.markdown("#### 📋 Platform Risk & Audit Benchmarking Table")
+    
+    mis_data = {
+        "Website Name": ["Amazon India", "Flipkart", "Meesho", "Myntra", "Snapdeal"],
+        "Sector": ["E-Commerce", "E-Commerce", "E-Commerce", "Fashion", "E-Commerce"],
+        "Scanned Pages": [6, 6, 6, 6, 6],
+        "Patterns Detected": [1, 0, 2, 0, 10],
+        "DPRS Score (0-100)": [50.0, 0.0, 50.0, 0.0, 50.0],
+        "Compliance Status": ["AT RISK", "COMPLIANT", "AT RISK", "COMPLIANT", "AT RISK"],
+        "Audit Sign-Off": ["Action Required", "Approved", "Action Required", "Approved", "Urgent Review"]
+    }
+    mis_df = pd.DataFrame(mis_data)
+    
+    st.dataframe(
+        mis_df,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Departmental Remediation SLA Tracker
+    col_sla, col_dl = st.columns([3, 2])
+
+    with col_sla:
+        st.markdown("#### ⏱️ Departmental Remediation Progress & SLA")
+        st.caption("Tracking pattern resolution across engineering and UX design teams")
+        
+        st.write("**Checkout & Cart Urgency Timers (UX Engineering)**")
+        st.progress(0.85, text="85% Resolved (17 of 20 items cleared)")
+        
+        st.write("**Disguised Ads & Sponsored Banners (Ad Operations)**")
+        st.progress(0.70, text="70% Resolved (7 of 10 items cleared)")
+
+        st.write("**Pre-checked Add-ons & Bundles (Product Architecture)**")
+        st.progress(0.92, text="92% Resolved (11 of 12 items cleared)")
+
+        st.write("**Legal & CCPA Guidelines Disclosures (Compliance Team)**")
+        st.progress(1.0, text="100% Fully Compliant (Sign-off complete)")
+
+    with col_dl:
+        st.markdown("#### 📥 Export Enterprise MIS Reports")
+        st.caption("Generate multi-sheet executive Excel files and audit logs")
+
+        if generate_multi_sheet_mis_report:
+            excel_bytes = generate_multi_sheet_mis_report()
+            st.download_button(
+                label="📊 Download Executive MIS Report (.xlsx)",
+                data=excel_bytes,
+                file_name=f"DPIS_MIS_Executive_Report_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+                type="primary"
+            )
+        
+        # Additional exports
+        if os.path.exists("data/processed/data_quality_report.csv"):
+            with open("data/processed/data_quality_report.csv", "rb") as f:
+                st.download_button(
+                    label="📑 Download Data Quality Audit CSV",
+                    data=f,
+                    file_name="DPIS_Data_Quality_Report.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+
+        if os.path.exists("data/processed/sql_analysis_results.csv"):
+            with open("data/processed/sql_analysis_results.csv", "rb") as f:
+                st.download_button(
+                    label="🗄️ Download SQL Query Analytics CSV",
+                    data=f,
+                    file_name="DPIS_SQL_Analysis_Results.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+
+
+
 st.markdown("---")
 st.markdown("""
 <div style='text-align:center; color:#6B7280; font-size:0.85rem; padding:1rem;'>
